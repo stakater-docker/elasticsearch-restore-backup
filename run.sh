@@ -58,8 +58,7 @@ BACKUP_NAME=\$(date +\%Y.\%m.\%d.\%H-\%M-\%S)
 echo "=> Backup started: \${BACKUP_NAME}"
 echo "${VOLUME}"
 
-tar -czvf /home/backup/"\${BACKUP_NAME}"-dump.tar.gz "${VOLUME}" > /dev/null
-ls /backup/
+tar -czvf $BACKUP_FOLDER/"\${BACKUP_NAME}"-dump.tar.gz "${VOLUME}" > /dev/null
 
 echo "=> Upload to s3 started: \${BACKUP_NAME}"
 
@@ -73,13 +72,13 @@ else
     echo "Bucket exists"
 fi
 # Upload the backup to S3 with timestamp
-aws s3 --region \${AWS_DEFAULT_REGION} cp /home/backup/"\${BACKUP_NAME}"-dump.tar.gz s3://\${S3_BUCKET_NAME}/\${BACKUP_NAME}
+aws s3 --region \${AWS_DEFAULT_REGION} cp $BACKUP_FOLDER/"\${BACKUP_NAME}"-dump.tar.gz s3://\${S3_BUCKET_NAME}/\${BACKUP_NAME}
 echo "=> Upload to s3 done"
 
 
 # *********CLEAN UP************ #
-echo "=> Cleanup started: /home/backup/"\${BACKUP_NAME}"-dump.tar.gz"
-rm /home/backup/"\${BACKUP_NAME}"-dump.tar.gz
+echo "=> Cleanup started: $BACKUP_FOLDER/"\${BACKUP_NAME}"-dump.tar.gz"
+rm $BACKUP_FOLDER/"\${BACKUP_NAME}"-dump.tar.gz
 
 echo "=> Cleanup done"
 

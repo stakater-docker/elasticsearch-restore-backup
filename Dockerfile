@@ -6,8 +6,8 @@ RUN echo "deb http://archive.ubuntu.com/ubuntu xenial main universe" > /etc/apt/
 	apt-get install -y python-pip && \
     apt-get -y install sudo nano git sudo zip bzip2 fontconfig wget groff && \
 	pip install awscli && \
-    mkdir -p home/restore && \
-    mkdir /home/backup
+    mkdir -p /home/restore && \
+    mkdir -p /home/backup
 
 ENV CRON_TIME="00 */1 * * *" \
 	S3_BUCKET_NAME="docker-backups.example.com" \
