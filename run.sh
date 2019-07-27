@@ -1,7 +1,9 @@
 #!/bin/bash
 export PATH=$PATH:/usr/bin:/usr/local/bin:/bin
 
-# These environment variables must not be empty
+# ************************************* #
+# ********* ENV VARS ************ #
+# ************************************* #
 echo  "Validating environment variable existance"
 [ -z "${AWS_ACCESS_KEY_ID}" ] && { echo "=> AWS_ACCESS_KEY_ID cannot be empty" && exit 1; }
 [ -z "${AWS_SECRET_ACCESS_KEY}" ] && { echo "=> AWS_SECRET_ACCESS_KEY cannot be empty" && exit 1; }
@@ -10,7 +12,9 @@ echo  "Validating environment variable existance"
 [ -z "${CRON_TIME}" ] && { echo "=> CRON_TIME cannot be empty" && exit 1; }
 [ -z "${AWS_DEFAULT_REGION}" ] && { echo "=> AWS_DEFAULT_REGION cannot be empty" && exit 1; }
 
-
+# ************************************* #
+# ********* RESTORE SCRIPT ************ #
+# ************************************* #
 echo "=> Creating restore script"
 rm -f /restore.sh
 cat <<EOF >> /restore.sh
@@ -37,8 +41,12 @@ echo "=> Restore dump from \$1"
 
 echo "=> Done"
 EOF
+# making backup script executable
 chmod +x /restore.sh
 
+# ************************************ #
+# ********* BACKUP SCRIPT ************ #
+# ************************************ #
 echo "=> Creating backup script"
 rm -f /backup.sh
 cat <<EOF >> /backup.sh
@@ -69,19 +77,25 @@ aws s3 --region \${AWS_DEFAULT_REGION} cp /home/backup/"\${BACKUP_NAME}"-dump.ta
 echo "=> Upload to s3 done"
 
 
-# *********CLEAN UP************
+# *********CLEAN UP************ #
 echo "=> Cleanup started: /home/backup/"\${BACKUP_NAME}"-dump.tar.gz"
 rm /home/backup/"\${BACKUP_NAME}"-dump.tar.gz
 
 echo "=> Cleanup done"
 
 EOF
+
+# making backup script executable
 chmod +x /backup.sh
 
+# Check to execute restore data or not
 if [[ "$RESTORE" == "true" ]]; then
   ./restore.sh
 fi
 
+# *********************************************** #
+# ********* CRON JOB FOR DATA BACKUP ************ #
+# *********************************************** #
 echo "${CRON_TIME} export S3_BUCKET_NAME=${S3_BUCKET_NAME}; export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}; export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}; export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}; /backup.sh >> /es_backup.log 2>&1" > /crontab.conf
 crontab  /crontab.conf
 echo "=> Running cron job"
