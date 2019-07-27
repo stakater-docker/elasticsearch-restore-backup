@@ -2,7 +2,7 @@
 export PATH=$PATH:/usr/bin:/usr/local/bin:/bin
 
 # ************************************* #
-# ********* ENV VARS ************ #
+# ********* ENV VARS ****************** #
 # ************************************* #
 echo  "Validating environment variable existance"
 [ -z "${AWS_ACCESS_KEY_ID}" ] && { echo "=> AWS_ACCESS_KEY_ID cannot be empty" && exit 1; }
