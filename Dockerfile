@@ -9,16 +9,16 @@ RUN echo "deb http://archive.ubuntu.com/ubuntu xenial main universe" > /etc/apt/
     mkdir -p home/restore && \
     mkdir /home/backup
 
-ENV CRON_TIME="*/1 * * * *" \
+ENV CRON_TIME="00 */1 * * *" \
 	S3_BUCKET_NAME="docker-backups.example.com" \
 	AWS_ACCESS_KEY_ID="**DefineMe**" \ 
 	AWS_SECRET_ACCESS_KEY="**DefineMe**" \
 	AWS_DEFAULT_REGION="us-east-1" \
-	PATHS_TO_BACKUP="/paths/to/backup" \
 	BACKUP_NAME="" \
 	LAST_BACKUP="" \
     RESTORE_FOLDER="/home/restore" \
-    VOLUME="" \
+    BACKUP_FOLDER="/home/backup" \
+    VOLUME="/usr/share/elasticsearch/data" \
 	RESTORE="true"
 
 ADD run.sh /run.sh

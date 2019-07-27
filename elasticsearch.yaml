@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+  namespace: <namespace-name>
+spec:
+  serviceName: "elasticsearch"
+  selector:
+    matchLabels:
+      app: elasticsearch
+  replicas: 1 
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:   
+      tolerations:
+      - key: "dedicated"
+        operator: "Equal"
+        value: "app"
+        effect: "NoSchedule"
+      containers:
+      - image: stakater/elasticsearch:2.3.1
+        name: elasticsearch
+        ports:
+        - containerPort: 9200
+          name: tcp
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: elasticsearch-pvc-1
+        resources: {}          
+      - image: stakater/elasticsearch-backup-restore:0.0.1
+        name: elasticsearch-backup-restore
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: elasticsearch-pvc-1
+        env:
+        - name: VOLUME
+          value: "/usr/share/elasticsearch/data"
+        - name: S3_BUCKET_NAME
+          value: "<bucket-name>"
+        - name: AWS_ACCESS_KEY_ID
+          value: "<access-key>"
+        - name: AWS_SECRET_ACCESS_KEY
+          value: "<access-key-secret>"
+        - name: AWS_DEFAULT_REGION
+          value: "<aws-region>"
+        - name: RESTORE_FOLDER
+          value: "/home/restore"
+        - name: BACKUP_FOLDER
+          value: "/home/backup"
+        - name: VOLUME
+          value: "/usr/share/elasticsearch/data"
+        - name: RESTORE
+          value: "true"
+          
+  volumeClaimTemplates:
+  - metadata:
+      name: elasticsearch-pvc-1
+    spec:
+      accessModes: [ "ReadWriteMany" ]
+      storageClassName: efs
+      resources:
+        requests:
+          storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: elasticsearch-svc
+  name: elasticsearch-svc
+  namespace: <namespace-name>
+spec:
+  ports:
+  - name: "es-port"
+    port: 9300
+    targetPort: 9300
+  - name: "es-port-2"
+    port: 9200
+    targetPort: 9200
+  selector:
+    app: elasticsearch
