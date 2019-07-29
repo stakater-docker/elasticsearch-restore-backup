@@ -10,6 +10,8 @@ It is a sidecar that will run inside elasticsearch pod. Its main purpose is to b
 
 Elasticsearch backup and restore [image](https://hub.docker.com/r/stakater/elasticsearch-backup-restore) [EBR] container can be used to backup elasticsearch data on S3 bucket. It runs inside elasticsearch pod as a sidecar container. A volume will be shared between both containers. EBR container will backup the elasticsearh data folder(default data storage folder is `/usr/share/elasticsearch/data` ) after the interval specified by the user.
 
+When the sidecar container starts it will restore the data in `/home/restore` folder. From there it can be moved to the shared volume between the container. Once data is moved, elasticsearch container must be restarted to so that it can load the data.
+
 
 | Environment Variable | Description | Default value |
 |---|---|---|
