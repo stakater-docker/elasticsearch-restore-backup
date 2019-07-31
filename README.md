@@ -27,9 +27,11 @@ Elasticsearch manifest provided in this repository uses two container their deta
 
 1- **`Init Container`**
 
-Init [container's](https://hub.docker.com/r/stakater/elasticsearch-restore) job is to restore the data from the AWS S3 bucket. Untar it and copy the data in the shared volume(`/usr/share/elasticsearch/data`) between the containers. 
+Init [container's](https://hub.docker.com/r/stakater/elasticsearch-restore) job is to restore the data from the AWS S3 bucket. Untar it and copy the data in the shared volume(`/usr/share/elasticsearch/data`) between the containers. T
 
-Sidecar container environment variable is given below:
+The reason to use an init container for data restoring is becuase it has a specific purpose, when fullfiled it must stop.
+
+Init container environment variable is given below:
 
 | Environment Variable | Description | Default value |
 |---|---|---|
