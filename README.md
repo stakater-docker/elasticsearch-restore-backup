@@ -1,5 +1,3 @@
-**Repository not created by Terraform**
-
 # Elasticsearch Data Backup and Restore Sidecar
 
 ## Overview
