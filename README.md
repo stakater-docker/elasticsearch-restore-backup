@@ -8,7 +8,7 @@ Elasticsearch restore and backup requires two container one for each operation. 
 
 There are multiple ways to backup and restore elasticsearch data, list is given below:
 
-1- Elasticsearch data snapshot. [Details](https://z0z0.me/how-to-create-snapshot-and-restore-snapshot-with-elasticsearch/)
+1- Elasticsearch Snapshot and Restore API. [Details](https://z0z0.me/how-to-create-snapshot-and-restore-snapshot-with-elasticsearch/)
 
 2- Elasticsearch reindexing API. [Details](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-reindex.html)
 
