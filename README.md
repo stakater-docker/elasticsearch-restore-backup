@@ -49,7 +49,7 @@ It is recommended to only use the init container only when the backup (AWS bucke
 
 2- **`Sidecar Container`**
 
-Sidecar [container's](https://hub.docker.com/r/stakater/elasticsearch-backup) job is to backup the data available in `/usr/share/elasticsearch/data` directory. It run continously side-by-side with elasticsearch container and backup the data after the interval specified by the user. During backup it compresses(in `yyyy.mm.dd-HH-MM-SS.tar.gz` format) the data and finally push it to AWS S3 bucket.
+Sidecar [container's](https://hub.docker.com/r/stakater/elasticsearch-backup) job is to backup the data available in `/usr/share/elasticsearch/data` directory. It run continously side-by-side with elasticsearch container and backup the data after the interval specified by the user. During backup process it compresses(in `yyyy.mm.dd-HH-MM-SS.tar.gz` format) the data and finally push it to AWS S3 bucket.
 
 
 | Environment Variable | Description | Default value |
