@@ -4,13 +4,54 @@
 
 ## Overview
 
-It is a sidecar that will run inside elasticsearch pod. Its main purpose is to backup and restore elasticsearch data.
+Elasticsearch restore and backup requires two container one for each operation. One of them is `init` container and the second one is `sidecar` container. This guide is based on `elasticsearch:2.3.1` version.
 
 ## Description
 
-Elasticsearch backup and restore [image](https://hub.docker.com/r/stakater/elasticsearch-backup-restore) [EBR] container can be used to backup elasticsearch data on S3 bucket. It runs inside elasticsearch pod as a sidecar container. A volume will be shared between both containers. EBR container will backup the elasticsearh data folder(default data storage folder is `/usr/share/elasticsearch/data` ) after the interval specified by the user.
+There are multiple ways to backup and restore elasticsearch data, list is given below:
 
-When the sidecar container starts it will restore the data in `/home/restore` folder. From there it can be moved to the shared volume between the container. Once data is moved, elasticsearch container must be restarted to so that it can load the data.
+1- Elasticsearch data snapshot. [Details](https://z0z0.me/how-to-create-snapshot-and-restore-snapshot-with-elasticsearch/)
+
+2- Elasticsearch reindexing API. [Details](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-reindex.html)
+
+3- Elasticsearch data folder restore and backup.
+
+This guide is based on the `3rd` method because of the following reasons:
+
+* When `elasticsearch:2.3.1` version docker container runs it loads the data provided in `/usr/share/elasticsearch/data/` directory. Method 1 cannot be used here because once the elasticsearch server starts it doesn't detect any change in `/etc/elasticsearch/elasticsearch.yml` file and it is the requirement of method 1 to specify the snapshot repository `repo.path: ["/datasource"]` in it.
+
+* Elasticsearch reindexing API is supported in after version 5, so therefore it cannot be done in the version.
+
+
+## Working
+
+Elasticsearch manifest provided in this repository uses two container their details is given below:
+
+1- **`Init Container`**
+
+Init [container's](https://hub.docker.com/r/stakater/elasticsearch-restore) job is to restore the data from the AWS S3 bucket. Untar it and copy the data in the shared volume(`/usr/share/elasticsearch/data`) between the containers. 
+
+Sidecar container environment variable is given below:
+
+| Environment Variable | Description | Default value |
+|---|---|---|
+| CRON_TIME | Data backup interval | Default backup interval is "00 */1 * * *", which means take backup after each hour. |
+| S3_BUCKET_NAME | AWS S3 bucket name | "" |
+| AWS_ACCESS_KEY_ID | AWS account access id | "" |
+| AWS_SECRET_ACCESS_KEY | AWS account access id secret | "" |
+| AWS_DEFAULT_REGION | AWS default region | "" |
+| LAST_BACKUP | Name of the last backup. Last backup name in extracted from S3 bucket name using the script written in `run.sh` file. | None |
+| RESTORE_FOLDER | Name of the folder. | /home/restore |
+| VOLUME | Volume that is shared between elasticsearch and elasticsearch-restore-backup container | `/usr/share/elasticsearch/data` |
+| RESTORE | Variable for check to restore data from S3 bucket. If `true` data will be restored from S3 bucket and store in location given in `RESTORE_FOLDER` env variable otherwise only data backup script will execute in the container. | true |
+
+**`NOTE`**
+
+It is recommended to only use the init container only when the backup (AWS bucket) and current data is synced. 
+
+2- **`Sidecar Container`**
+
+Sidecar [container's](https://hub.docker.com/r/stakater/elasticsearch-backup) job is to backup the data available in `/usr/share/elasticsearch/data` directory. It run continously side-by-side with elasticsearch container and backup the data after the interval specified by the user. During backup it compresses(in `yyyy.mm.dd-HH-MM-SS.tar.gz` format) the data and finally push it to AWS S3 bucket.
 
 
 | Environment Variable | Description | Default value |
@@ -20,20 +61,5 @@ When the sidecar container starts it will restore the data in `/home/restore` fo
 | AWS_ACCESS_KEY_ID | AWS account access id | "" |
 | AWS_SECRET_ACCESS_KEY | AWS account access id secret | "" |
 | AWS_DEFAULT_REGION | AWS default region | "" |
-| BACKUP_NAME | Name of the backup. | Its default value is yyyy.mm.dd-HH-MM-SS-dump.tar.gz |
-| LAST_BACKUP | Name of the last backup. Last backup name in extracted from S3 bucket name using the script written in `run.sh` file. | None |
-| RESTORE_FOLDER | Name of the folder. | /home/restore |
 | BACKUP_FOLDER | Name of backup folder | /home/backup |
 | VOLUME | Volume that is shared between elasticsearch and elasticsearch-restore-backup container | `/usr/share/elasticsearch/data` |
-| RESTORE | Variable for check to restore data from S3 bucket. If `true` data will be restored from S3 bucket and store in location given in `RESTORE_FOLDER` env variable otherwise only data backup script will execute in the container. | true |
-
-
-## CAVEATS
-
-* It has been tested with elasticsearch:2.3.1 version.
-
-* Elasticsearch provides different methods to backup and restore data. 
-  
-  1- [`Using snapshot`](https://linuxaws.wordpress.com/2018/09/21/how-to-create-snapshots-of-elasticsearch-cluster-data-and-restore/):  When the elasticsearch run inside the container it doesn't detect the changes done in `/etc/elasticsearch/elasticsearch.yml` file.
-
-  2- `Using Reindexing`: This feature exists after elasticseach version 5 which is not possible in this scenario because the version that is being used is `2.3.1`.

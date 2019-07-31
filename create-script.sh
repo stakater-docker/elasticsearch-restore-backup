@@ -12,38 +12,6 @@ echo  "Validating environment variable existance"
 [ -z "${CRON_TIME}" ] && { echo "=> CRON_TIME cannot be empty" && exit 1; }
 [ -z "${AWS_DEFAULT_REGION}" ] && { echo "=> AWS_DEFAULT_REGION cannot be empty" && exit 1; }
 
-# ************************************* #
-# ********* RESTORE SCRIPT ************ #
-# ************************************* #
-echo "=> Creating restore script"
-rm -f /restore.sh
-cat <<EOF >> /restore.sh
-#!/bin/bash
-BUCKET_EXIST=\$(aws s3 --region \${AWS_DEFAULT_REGION} ls | grep \${S3_BUCKET_NAME} | wc -l)
-if [ \${BUCKET_EXIST} -eq 0 ];
-then
-    echo "Bucket does not exist"
-    exit 1
-else
-    echo "Bucket exists"
-fi
-
-echo "Extracting last backup name from bucket"
-if [ -z "\${LAST_BACKUP}" ]; then
-# Find last backup file
-: ${LAST_BACKUP:=$(aws s3 ls s3://$S3_BUCKET_NAME | awk -F " " '{print $4}' | sort -r | head -n1)}
-fi
-
-# Download backup from S3
-echo "=> Restore from S3 => $LAST_BACKUP"
-aws s3 cp s3://$S3_BUCKET_NAME/$LAST_BACKUP $RESTORE_FOLDER/$LAST_BACKUP
-echo "=> Restore dump from \$1"
-
-echo "=> Done"
-EOF
-# making backup script executable
-chmod +x /restore.sh
-
 # ************************************ #
 # ********* BACKUP SCRIPT ************ #
 # ************************************ #
@@ -52,45 +20,40 @@ rm -f /backup.sh
 cat <<EOF >> /backup.sh
 #!/bin/bash
 export PATH=$PATH:/usr/bin:/usr/local/bin:/bin
-MAX_BACKUPS=${MAX_BACKUPS}
-BACKUP_NAME=\$(date +\%Y.\%m.\%d.\%H-\%M-\%S)
 
+# *********BACKING UP DATA************ #
+BACKUP_NAME=\$(date +\%Y.\%m.\%d.\%H-\%M-\%S).tar.gz
 echo "=> Backup started: \${BACKUP_NAME}"
-echo "${VOLUME}"
+tar -czvf $BACKUP_FOLDER/"\${BACKUP_NAME}" --directory="${VOLUME}" elasticsearch  > /dev/null
+echo "=> Backup has been completed"
 
-tar -czvf $BACKUP_FOLDER/"\${BACKUP_NAME}"-dump.tar.gz "${VOLUME}" > /dev/null
-
-echo "=> Upload to s3 started: \${BACKUP_NAME}"
-
-# Create bucket, if it doesn't already exist
+# *********CREATING BUCKET IF IT DOES NOT EXISTS************ #
 BUCKET_EXIST=\$(aws s3 --region \${AWS_DEFAULT_REGION} ls | grep \${S3_BUCKET_NAME} | wc -l)
-
 if [ \${BUCKET_EXIST} -eq 0 ];
 then
+    echo "=> Creating bucket"
     aws s3 --region \${AWS_DEFAULT_REGION} mb s3://\${S3_BUCKET_NAME}
+    echo "=> Bucket created"
 else
     echo "Bucket exists"
 fi
+
+# *********UPLOADING DATA TO S3 BUCKET************ #
+echo "=> Upload to s3 started: \${BACKUP_NAME}"
 # Upload the backup to S3 with timestamp
-aws s3 --region \${AWS_DEFAULT_REGION} cp $BACKUP_FOLDER/"\${BACKUP_NAME}"-dump.tar.gz s3://\${S3_BUCKET_NAME}/\${BACKUP_NAME}
+aws s3 --region \${AWS_DEFAULT_REGION} cp $BACKUP_FOLDER/"\${BACKUP_NAME}" s3://\${S3_BUCKET_NAME}/\${BACKUP_NAME}
 echo "=> Upload to s3 done"
 
 
 # *********CLEAN UP************ #
-echo "=> Cleanup started: $BACKUP_FOLDER/"\${BACKUP_NAME}"-dump.tar.gz"
-rm $BACKUP_FOLDER/"\${BACKUP_NAME}"-dump.tar.gz
-
+echo "=> Cleanup started: $BACKUP_FOLDER/"\${BACKUP_NAME}""
+# rm $BACKUP_FOLDER/"\${BACKUP_NAME}"
 echo "=> Cleanup done"
 
 EOF
 
 # making backup script executable
 chmod +x /backup.sh
-
-# Check to execute restore data or not
-if [[ "$RESTORE" == "true" ]]; then
-  ./restore.sh
-fi
 
 # *********************************************** #
 # ********* CRON JOB FOR DATA BACKUP ************ #

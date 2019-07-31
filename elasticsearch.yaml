@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: elasticsearch
-  namespace: <namespace-name>
+  namespace: <namespace>
 spec:
   serviceName: "elasticsearch"
   selector:
@@ -19,40 +19,86 @@ spec:
         operator: "Equal"
         value: "app"
         effect: "NoSchedule"
+      initContainers:
+      - image: stakater/elasticsearch-restore:0.0.10
+        name: elasticsearch-restore-init
+        env:
+        - name: VOLUME
+          value: "/usr/share/elasticsearch/data"
+        - name: S3_BUCKET_NAME
+          valueFrom:
+            secretKeyRef:
+              name: <k8s-secret-name>
+              key: es_bucket
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: <k8s-secret-name>
+              key: aws_access_key_id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: <k8s-secret-name>
+              key: aws_secret_access_key
+        - name: AWS_DEFAULT_REGION
+          valueFrom:
+            secretKeyRef:
+              name: <k8s-secret-name>
+              key: aws_default_region
+        - name: RESTORE
+          value: "false"
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: elasticsearch-pvc-1
+          
       containers:
       - image: stakater/elasticsearch:2.3.1
         name: elasticsearch
+        env:  
+        - name: discovery.type
+          value: "single-node"
+        - name: bootstrap.memory_lock
+          value: "true"
+        - name: ES_JAVA_OPTS
+          value: "-Xms512m -Xmx512m"
         ports:
         - containerPort: 9200
           name: tcp
         volumeMounts:
         - mountPath: /usr/share/elasticsearch/data
           name: elasticsearch-pvc-1
-        resources: {}          
-      - image: stakater/elasticsearch-backup-restore:0.0.1
-        name: elasticsearch-backup-restore
+        resources: {}      
+
+      - image: stakater/elasticsearch-backup:0.0.10
+        name: elasticsearch-backup
         volumeMounts:
         - mountPath: /usr/share/elasticsearch/data
           name: elasticsearch-pvc-1
         env:
+        - name: CRON_TIME
+          value: "00 */1 * * *"
         - name: VOLUME
           value: "/usr/share/elasticsearch/data"
         - name: S3_BUCKET_NAME
-          value: "<bucket-name>"
+          valueFrom:
+            secretKeyRef:
+              name: <k8s-secret-name>
+              key: es_bucket
         - name: AWS_ACCESS_KEY_ID
-          value: "<access-key>"
+          valueFrom:
+            secretKeyRef:
+              name: <k8s-secret-name>
+              key: aws_access_key_id
         - name: AWS_SECRET_ACCESS_KEY
-          value: "<access-key-secret>"
+          valueFrom:
+            secretKeyRef:
+              name: <k8s-secret-name>
+              key: aws_secret_access_key
         - name: AWS_DEFAULT_REGION
-          value: "<aws-region>"
-        - name: RESTORE_FOLDER
-          value: "/home/restore"
-        - name: BACKUP_FOLDER
-          value: "/home/backup"
-        - name: VOLUME
-          value: "/usr/share/elasticsearch/data"
-        - name: RESTORE
-          value: "true"
+          valueFrom:
+            secretKeyRef:
+              name: <k8s-secret-name>
+              key: aws_default_region
           
   volumeClaimTemplates:
   - metadata:
@@ -70,7 +116,7 @@ metadata:
   labels:
     app: elasticsearch-svc
   name: elasticsearch-svc
-  namespace: <namespace-name>
+  namespace: <namespace>
 spec:
   ports:
   - name: "es-port"

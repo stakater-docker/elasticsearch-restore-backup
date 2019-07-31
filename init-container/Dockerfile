@@ -6,16 +6,17 @@ RUN echo "deb http://archive.ubuntu.com/ubuntu xenial main universe" > /etc/apt/
     apt-get install -y python-pip && \
     apt-get -y install sudo nano git sudo zip bzip2 fontconfig wget groff && \
     pip install awscli && \
-    mkdir -p /home/backup
+    mkdir -p /home/restore
 
-ENV CRON_TIME="00 */1 * * *" \
-    S3_BUCKET_NAME="docker-backups.example.com" \
+ENV S3_BUCKET_NAME="docker-backups.example.com" \
     AWS_ACCESS_KEY_ID="" \ 
     AWS_SECRET_ACCESS_KEY="" \
     AWS_DEFAULT_REGION="" \
-    BACKUP_FOLDER="/home/backup" \
-    VOLUME="/usr/share/elasticsearch/data"
+    LAST_BACKUP="" \
+    RESTORE_FOLDER="/home/restore" \
+    VOLUME="/usr/share/elasticsearch/data" \
+    RESTORE="true"
 
-ADD create-script.sh /create-script.sh
+ADD creat-script.sh /creat-script.sh
 
-CMD ["./create-script.sh"]
+CMD ["./creat-script.sh"]
