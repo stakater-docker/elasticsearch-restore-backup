@@ -17,6 +17,6 @@ ENV S3_BUCKET_NAME="docker-backups.example.com" \
     VOLUME="/usr/share/elasticsearch/data" \
     RESTORE="true"
 
-ADD creat-script.sh /creat-script.sh
+ADD create-script.sh /create-script.sh
 
-CMD ["./creat-script.sh"]
+CMD ["./create-script.sh"]
