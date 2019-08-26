@@ -1,4 +1,4 @@
-# Elasticsearch Data Backup and Restore Sidecar
+# Elasticsearch Data Backup & Restore Sidecar
 
 ## Overview
 
